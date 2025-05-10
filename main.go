@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -89,6 +91,13 @@ func startServer(ctx context.Context, c *cli.Command) error {
 	loadConfiguration(configFile)
 
 	Logger.Info().Str("version", version).Str("config-file", configFile).Str("metrics-path", metricsPath).Str("address", listenAddress).Msg("Starting telnet-exporter")
+
+	// Create a new HTTP server
+	server := &http.Server{
+		Addr: listenAddress,
+	}
+
+	// Handle root and metrics paths
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
             <head><title>telnet-exporter (Version ` + version + `)</title></head>
@@ -100,7 +109,33 @@ func startServer(ctx context.Context, c *cli.Command) error {
 	})
 	http.HandleFunc(metricsPath, handleMetricsRequest)
 
-	return http.ListenAndServe(listenAddress, nil)
+	// Channel to listen for OS signals (e.g., SIGINT, SIGTERM)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, os.Kill)
+
+	// Run the server in a goroutine
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			Logger.Fatal().Err(err).Msg("HTTP server error")
+		}
+	}()
+
+	// Wait for a termination signal
+	<-stop
+	Logger.Info().Msg("Shutting down server...")
+
+	// Create a context with a timeout for the shutdown process
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Gracefully shut down the server
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		Logger.Error().Err(err).Msg("Server forced to shutdown")
+		return err
+	}
+
+	Logger.Info().Msg("Server stopped")
+	return nil
 }
 
 func handleMetricsRequest(w http.ResponseWriter, request *http.Request) {
