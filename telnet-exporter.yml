@@ -1,0 +1,47 @@
+---
+
+hosts:
+  192.168.1.1:
+    username: admin
+    password: admin
+    commands: &commands
+      - command: diag pon get transceiver bias-current
+        metrics:
+          gpon_bias_current_mA:
+            help: Bias Current of the GPON device in mA
+            regex: '(-?\d+\.\d+)'
+
+      - command: diag pon get transceiver rx-power
+        metrics:
+          gpon_rx_power_dbm:
+            help: Rx Power of the GPON device in dBm
+            regex: '(-?\d+\.\d+)'
+
+      - command: diag pon get transceiver tx-power
+        metrics:
+          gpon_tx_power_dbm:
+            help: Tx Power of the GPON device in dBm
+            regex: '(-?\d+\.\d+)'
+
+      - command: diag pon get transceiver temperature
+        metrics:
+          gpon_temperature_celsius:
+            help: Temperature of the GPON device in Celsius
+            regex: '(\d+\.\d+)'
+
+      - command: diag pon get transceiver voltage
+        metrics:
+          gpon_voltage_volts:
+            help: Voltage of the GPON device in Volts
+            regex: '(\d+\.\d+)'
+
+      - command: diag gpon get onu-state
+        metrics:
+          gpon_onu_state:
+            help: ONU State of the GPON device
+            regex: 'ONU state: .*\(O(\d+)\)'
+
+  192.168.0.1:
+    username: admin
+    password: admin
+    commands: *commands
