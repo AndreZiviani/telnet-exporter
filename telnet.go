@@ -60,14 +60,12 @@ func readUntil(conn net.Conn, stopWords []string, timeout time.Duration) (string
 		}
 
 		output.WriteByte(b)
-		// if strings.Contains(output.String(), "\n") {
 		line := output.String()
 		for _, stop := range stopWords {
 			if strings.Contains(line, stop) {
 				return line, nil
 			}
 		}
-		// }
 	}
 }
 
@@ -77,6 +75,13 @@ func sendCommand(conn net.Conn, cmd string, prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	time.Sleep(500 * time.Millisecond) // wait for output
+
+	if prompt == "" {
+		return "", nil
+	}
+
+	// Read until the prompt appears
 	return readUntil(conn, []string{prompt}, 3*time.Second)
 }

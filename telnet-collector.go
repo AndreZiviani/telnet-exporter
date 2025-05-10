@@ -84,6 +84,8 @@ func (s *TelnetCollector) collectForHost(ch chan<- prometheus.Metric, wg *sync.W
 		s.collectForCommand(ch, telnetClient, host, command)
 	}
 
+	sendCommand(telnetClient, "exit", "")
+
 	Logger.Debug().Str("host", host.HostName).Int("duration", int(time.Since(now).Milliseconds())).Msg("Finished collection for host")
 }
 
