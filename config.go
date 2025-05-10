@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"maps"
 	"regexp"
 	"sync"
 
@@ -23,13 +24,14 @@ type Config struct {
 type HostConfig struct {
 	Mutex          sync.Mutex
 	HostName       string
-	Port           int              `yaml:"port,omitempty"`
-	Username       string           `yaml:"username"`
-	Password       string           `yaml:"password,omitempty"`
-	ConnectTimeout int              `yaml:"connect_timeout,omitempty"`
-	CommandTimeout int              `yaml:"command_timeout,omitempty"`
-	Commands       []*CommandConfig `yaml:"commands"`
-	Prompt         string           `yaml:"prompt"`
+	Port           int               `yaml:"port,omitempty"`
+	Username       string            `yaml:"username"`
+	Password       string            `yaml:"password,omitempty"`
+	ConnectTimeout int               `yaml:"connect_timeout,omitempty"`
+	CommandTimeout int               `yaml:"command_timeout,omitempty"`
+	Commands       []*CommandConfig  `yaml:"commands"`
+	Labels         map[string]string `yaml:"labels,omitempty"`
+	Prompt         string            `yaml:"prompt"`
 }
 
 // CommandConfig stores command specific configuration
@@ -91,6 +93,11 @@ func ParseConfigurationFile(reader io.Reader) (*Config, error) {
 					return nil, fmt.Errorf("Could not compile regex (host='%s', command='%s', metric='%s') '%s'", hostName, command.Command, metricName, metric.Regex)
 				}
 				metric.RegexCompiled = expr
+				if metric.Labels == nil {
+					metric.Labels = host.Labels
+				} else {
+					maps.Copy(metric.Labels, host.Labels)
+				}
 			}
 		}
 	}
